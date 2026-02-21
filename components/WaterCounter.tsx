@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { getCount, incrementCount, getDailyGoal, setDailyGoal } from '../lib/storage';
+import { getCount, incrementCount, decrementCount, getDailyGoal, setDailyGoal } from '../lib/storage';
 
 function formatDate(date: Date): string {
   const y = date.getFullYear();
@@ -37,6 +37,11 @@ export default function WaterCounter() {
     await setDailyGoal(value);
     setGoalState(value);
   }, []);
+
+  const onDecrement = useCallback(async () => {
+    const next = await decrementCount(today);
+    setCount(next);
+  }, [today]);
 
   if (loading) {
     return (
@@ -75,6 +80,15 @@ export default function WaterCounter() {
       </View>
       <Pressable style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]} onPress={onIncrement}>
         <Text style={styles.buttonText}>물 마셨다</Text>
+      </Pressable>
+      <Pressable
+        style={({ pressed }) => [styles.buttonSecondary, pressed && styles.buttonPressed]}
+        onPress={onDecrement}
+        disabled={count === 0}
+      >
+        <Text style={[styles.buttonSecondaryText, count === 0 && styles.buttonSecondaryTextDisabled]}>
+          한 번 빼기
+        </Text>
       </Pressable>
     </View>
   );
@@ -168,6 +182,23 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 18,
     fontWeight: '600',
+  },
+  buttonSecondary: {
+    marginTop: 12,
+    paddingVertical: 12,
+    paddingHorizontal: 24,
+    borderRadius: 12,
+    minWidth: 160,
+    alignItems: 'center',
+    backgroundColor: '#f5f5f5',
+  },
+  buttonSecondaryText: {
+    color: '#666',
+    fontSize: 16,
+    fontWeight: '500',
+  },
+  buttonSecondaryTextDisabled: {
+    color: '#bbb',
   },
   loading: {
     fontSize: 16,

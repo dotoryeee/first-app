@@ -27,6 +27,14 @@ export async function incrementCount(date: Date): Promise<number> {
   return next;
 }
 
+export async function decrementCount(date: Date): Promise<number> {
+  const key = dateKey(date);
+  const current = await getCount(date);
+  const next = Math.max(0, current - 1);
+  await AsyncStorage.setItem(key, String(next));
+  return next;
+}
+
 export async function getAllDates(): Promise<string[]> {
   const keys = await AsyncStorage.getAllKeys();
   const waterKeys = keys.filter((k) => k.startsWith(KEY_PREFIX));
