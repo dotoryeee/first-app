@@ -54,3 +54,21 @@ export async function setDailyGoal(goal: number): Promise<void> {
   const n = Math.max(1, Math.min(99, Math.floor(goal)));
   await AsyncStorage.setItem(GOAL_KEY, String(n));
 }
+
+export type DayEntry = { dateStr: string; count: number };
+
+export async function getLast7Days(): Promise<DayEntry[]> {
+  const result: DayEntry[] = [];
+  const today = new Date();
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const y = d.getFullYear();
+    const m = String(d.getMonth() + 1).padStart(2, '0');
+    const day = String(d.getDate()).padStart(2, '0');
+    const dateStr = `${y}-${m}-${day}`;
+    const count = await getCount(d);
+    result.push({ dateStr, count });
+  }
+  return result;
+}
