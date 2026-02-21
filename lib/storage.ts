@@ -1,6 +1,8 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const KEY_PREFIX = 'water:';
+const GOAL_KEY = 'dailyGoal';
+const DEFAULT_GOAL = 8;
 
 function dateKey(date: Date): string {
   const y = date.getFullYear();
@@ -31,4 +33,16 @@ export async function getAllDates(): Promise<string[]> {
   const dates = waterKeys.map((k) => k.slice(KEY_PREFIX.length));
   dates.sort((a, b) => b.localeCompare(a));
   return dates;
+}
+
+export async function getDailyGoal(): Promise<number> {
+  const value = await AsyncStorage.getItem(GOAL_KEY);
+  if (value == null) return DEFAULT_GOAL;
+  const n = parseInt(value, 10);
+  return isNaN(n) || n < 1 ? DEFAULT_GOAL : n;
+}
+
+export async function setDailyGoal(goal: number): Promise<void> {
+  const n = Math.max(1, Math.min(99, Math.floor(goal)));
+  await AsyncStorage.setItem(GOAL_KEY, String(n));
 }

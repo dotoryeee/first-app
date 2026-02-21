@@ -1,6 +1,6 @@
 import { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, Pressable } from 'react-native';
-import { getCount, incrementCount } from '../lib/storage';
+import { getCount, incrementCount, getDailyGoal, setDailyGoal } from '../lib/storage';
 
 function formatDate(date: Date): string {
   const y = date.getFullYear();
@@ -14,11 +14,13 @@ function formatDate(date: Date): string {
 export default function WaterCounter() {
   const [today] = useState(() => new Date());
   const [count, setCount] = useState(0);
+  const [goal, setGoalState] = useState(8);
   const [loading, setLoading] = useState(true);
 
   const refresh = useCallback(async () => {
-    const c = await getCount(today);
+    const [c, g] = await Promise.all([getCount(today), getDailyGoal()]);
     setCount(c);
+    setGoalState(g);
     setLoading(false);
   }, [today]);
 
@@ -26,10 +28,15 @@ export default function WaterCounter() {
     refresh();
   }, [refresh]);
 
-  const onPress = useCallback(async () => {
+  const onIncrement = useCallback(async () => {
     const next = await incrementCount(today);
     setCount(next);
   }, [today]);
+
+  const onSetGoal = useCallback(async (value: number) => {
+    await setDailyGoal(value);
+    setGoalState(value);
+  }, []);
 
   if (loading) {
     return (
@@ -40,12 +47,33 @@ export default function WaterCounter() {
     );
   }
 
+  const achieved = goal > 0 && count >= goal;
+
   return (
     <View style={styles.container}>
       <Text style={styles.date}>{formatDate(today)}</Text>
-      <Text style={styles.count}>{count}잔</Text>
-      <Text style={styles.label}>오늘 물 마신 횟수</Text>
-      <Pressable style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]} onPress={onPress}>
+      <View style={styles.countRow}>
+        <Text style={[styles.count, achieved && styles.countAchieved]}>{count}</Text>
+        <Text style={styles.countUnit}> / {goal}잔</Text>
+      </View>
+      {achieved ? (
+        <Text style={styles.achievedLabel}>목표 달성!</Text>
+      ) : (
+        <Text style={styles.label}>오늘 물 마신 횟수</Text>
+      )}
+      <View style={styles.goalRow}>
+        <Text style={styles.goalLabel}>일일 목표: </Text>
+        {[6, 8, 10].map((g) => (
+          <Pressable
+            key={g}
+            style={[styles.goalChip, goal === g && styles.goalChipActive]}
+            onPress={() => onSetGoal(g)}
+          >
+            <Text style={[styles.goalChipText, goal === g && styles.goalChipTextActive]}>{g}잔</Text>
+          </Pressable>
+        ))}
+      </View>
+      <Pressable style={({ pressed }) => [styles.button, pressed && styles.buttonPressed]} onPress={onIncrement}>
         <Text style={styles.buttonText}>물 마셨다</Text>
       </Pressable>
     </View>
@@ -63,16 +91,67 @@ const styles = StyleSheet.create({
     color: '#666',
     marginBottom: 8,
   },
+  countRow: {
+    flexDirection: 'row',
+    alignItems: 'baseline',
+    marginBottom: 4,
+  },
   count: {
     fontSize: 48,
     fontWeight: '700',
     color: '#1565c0',
-    marginBottom: 4,
+  },
+  countAchieved: {
+    color: '#2e7d32',
+  },
+  countUnit: {
+    fontSize: 24,
+    fontWeight: '600',
+    color: '#666',
+    marginLeft: 4,
+  },
+  achievedLabel: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2e7d32',
+    marginBottom: 24,
   },
   label: {
     fontSize: 14,
     color: '#888',
-    marginBottom: 32,
+    marginBottom: 16,
+  },
+  goalRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flexWrap: 'wrap',
+    justifyContent: 'center',
+    marginBottom: 28,
+    gap: 8,
+  },
+  goalLabel: {
+    fontSize: 14,
+    color: '#666',
+    width: '100%',
+    textAlign: 'center',
+    marginBottom: 4,
+  },
+  goalChip: {
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderRadius: 20,
+    backgroundColor: '#e3f2fd',
+  },
+  goalChipActive: {
+    backgroundColor: '#1565c0',
+  },
+  goalChipText: {
+    fontSize: 14,
+    color: '#1565c0',
+    fontWeight: '500',
+  },
+  goalChipTextActive: {
+    color: '#fff',
   },
   button: {
     backgroundColor: '#2196f3',
